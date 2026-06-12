@@ -24,8 +24,14 @@ const InvitePage: React.FC = () => {
         const matchRequest = mockMatchRequests.find(r => r.id === id);
         setRequest(matchRequest || null);
       } else {
-        const weekendRequest = mockWeekendRequests.find(r => r.id === id);
-        setRequest(weekendRequest || null);
+        const myRequests = storage.getMyRequests();
+        const savedRequest = myRequests.find(r => r.id === id);
+        if (savedRequest) {
+          setRequest(savedRequest);
+        } else {
+          const weekendRequest = mockWeekendRequests.find(r => r.id === id);
+          setRequest(weekendRequest || null);
+        }
       }
       setLoading(false);
     }, 500);
@@ -140,6 +146,8 @@ const InvitePage: React.FC = () => {
           }
 
           setInviteStatus('rejected');
+          
+          Taro.eventCenter.trigger('onShow');
           
           Taro.showToast({
             title: '已拒绝',

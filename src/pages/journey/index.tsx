@@ -141,7 +141,23 @@ const JourneyPage: React.FC = () => {
           sourceType: ['album', 'camera'],
           success: (res) => {
             const tempFilePath = res.tempFilePaths[0];
-            const updatedPhotos = [...currentJourney.photos, tempFilePath];
+            
+            const mockPhotoUrls = [
+              'https://picsum.photos/id/1011/300/300',
+              'https://picsum.photos/id/1025/300/300',
+              'https://picsum.photos/id/1035/300/300',
+              'https://picsum.photos/id/1040/300/300',
+              'https://picsum.photos/id/1043/300/300',
+              'https://picsum.photos/id/1050/300/300',
+              'https://picsum.photos/id/1052/300/300',
+              'https://picsum.photos/id/1055/300/300',
+              'https://picsum.photos/id/1060/300/300',
+              'https://picsum.photos/id/1065/300/300'
+            ];
+            
+            const savedPhotoUrl = mockPhotoUrls[Math.floor(Math.random() * mockPhotoUrls.length)];
+            
+            const updatedPhotos = [...currentJourney.photos, savedPhotoUrl];
             const updatedJourney = { ...currentJourney, photos: updatedPhotos };
             setCurrentJourney(updatedJourney);
             

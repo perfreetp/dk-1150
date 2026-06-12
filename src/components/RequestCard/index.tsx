@@ -32,7 +32,7 @@ const RequestCard: React.FC<RequestCardProps> = ({ request, onClick }) => {
       onClick();
     } else {
       Taro.navigateTo({
-        url: `/pages/invite/index?id=${request.id}`
+        url: `/pages/invite/index?id=${request.id}&type=weekend`
       });
     }
   };

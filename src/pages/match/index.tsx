@@ -5,6 +5,7 @@ import styles from './index.module.scss';
 import MatchCard from '@/components/MatchCard';
 import { mockMatchRequests } from '@/data/mockMatchRequests';
 import { MatchRequest } from '@/types/match';
+import { Journey } from '@/types/journey';
 import { storage } from '@/utils/storage';
 
 interface MatchRequestWithStatus extends MatchRequest {
@@ -16,6 +17,10 @@ const MatchPage: React.FC = () => {
   const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
+    loadRequests();
+  }, []);
+
+  const loadRequests = () => {
     const savedStatuses = storage.getMatchRequests();
     const requestsWithStatus = mockMatchRequests.map(req => {
       const savedStatus = savedStatuses?.find(s => s.id === req.id);
@@ -25,9 +30,50 @@ const MatchPage: React.FC = () => {
       } as MatchRequestWithStatus;
     });
     setRequests(requestsWithStatus);
+  };
+
+  useEffect(() => {
+    const onShow = () => {
+      loadRequests();
+    };
+    
+    Taro.eventCenter.on('onShow', onShow);
+    
+    return () => {
+      Taro.eventCenter.off('onShow', onShow);
+    };
   }, []);
 
   const handleAccept = (requestId: string) => {
+    const request = requests.find(r => r.id === requestId);
+    if (!request) return;
+    
+    const newJourney: Journey = {
+      id: `journey_${Date.now()}`,
+      requestId: request.id,
+      requestInfo: {
+        type: request.type,
+        title: request.title,
+        timeSlot: request.timeSlot,
+        location: request.location
+      },
+      partnerInfo: {
+        name: request.userInfo.name,
+        avatar: request.userInfo.avatar,
+        gender: request.userInfo.gender,
+        phone: '138****8888',
+        rating: request.userInfo.rating
+      },
+      status: 'confirmed',
+      secretCode: '🤝',
+      notes: [],
+      photos: [],
+      isOverdue: false
+    };
+
+    storage.addJourney(newJourney);
+    storage.setCurrentJourney(newJourney);
+    
     const updatedRequests = requests.map(req =>
       req.id === requestId ? { ...req, status: 'accepted' as const } : req
     );

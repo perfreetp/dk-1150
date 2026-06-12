@@ -150,3 +150,27 @@
   color: $color-text-white;
   font-weight: $font-weight-medium;
 }
+
+.acceptedBadge {
+  background-color: $color-success;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $radius-button;
+}
+
+.acceptedText {
+  font-size: $font-size-sm;
+  color: $color-text-white;
+  font-weight: $font-weight-semibold;
+}
+
+.rejectedBadge {
+  background-color: $color-text-disabled;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $radius-button;
+}
+
+.rejectedText {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+}

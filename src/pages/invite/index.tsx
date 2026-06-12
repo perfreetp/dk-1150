@@ -7,11 +7,14 @@ import { mockWeekendRequests } from '@/data/mockWeekendRequests';
 import { mockMatchRequests } from '@/data/mockMatchRequests';
 import { WeekendRequest } from '@/types/weekend';
 import { MatchRequest } from '@/types/match';
+import { Journey } from '@/types/journey';
+import { storage } from '@/utils/storage';
 
 const InvitePage: React.FC = () => {
   const router = useRouter();
   const [request, setRequest] = useState<WeekendRequest | MatchRequest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [inviteStatus, setInviteStatus] = useState<'pending' | 'accepted' | 'rejected'>('pending');
 
   useEffect(() => {
     const { id, type } = router.params;
@@ -26,6 +29,13 @@ const InvitePage: React.FC = () => {
       }
       setLoading(false);
     }, 500);
+
+    if (id) {
+      const savedStatus = storage.getInviteStatus(id);
+      if (savedStatus) {
+        setInviteStatus(savedStatus);
+      }
+    }
   }, [router.params]);
 
   const requestTypeOptions = [
@@ -51,15 +61,58 @@ const InvitePage: React.FC = () => {
   };
 
   const handleAccept = () => {
+    if (!request) return;
+    
     Taro.showModal({
       title: '确认接受',
       content: '确定要接受这个邀约吗？',
       success: (res) => {
         if (res.confirm) {
+          const isMatchRequest = 'userInfo' in request;
+          
+          const newJourney: Journey = {
+            id: `journey_${Date.now()}`,
+            requestId: request.id,
+            requestInfo: {
+              type: request.type,
+              title: request.title,
+              timeSlot: request.timeSlot,
+              location: request.location
+            },
+            partnerInfo: isMatchRequest ? {
+              name: request.userInfo.name,
+              avatar: request.userInfo.avatar,
+              gender: request.userInfo.gender,
+              phone: '138****8888',
+              rating: request.userInfo.rating
+            } : {
+              name: '我',
+              avatar: 'https://picsum.photos/id/64/200/200',
+              gender: 'female' as const,
+              rating: 4.8
+            },
+            status: 'confirmed',
+            secretCode: '🎉',
+            notes: [],
+            photos: [],
+            isOverdue: false
+          };
+
+          storage.addJourney(newJourney);
+          storage.setCurrentJourney(newJourney);
+          storage.setInviteStatus(request.id, 'accepted');
+          
+          if (isMatchRequest) {
+            storage.updateMatchRequestStatus(request.id, 'accepted');
+          }
+
+          setInviteStatus('accepted');
+          
           Taro.showToast({
             title: '已接受邀约',
             icon: 'success'
           });
+          
           setTimeout(() => {
             Taro.switchTab({
               url: '/pages/journey/index'
@@ -71,15 +124,28 @@ const InvitePage: React.FC = () => {
   };
 
   const handleReject = () => {
+    if (!request) return;
+    
     Taro.showModal({
       title: '确认拒绝',
       content: '确定要拒绝这个邀约吗？',
       success: (res) => {
         if (res.confirm) {
+          const isMatchRequest = 'userInfo' in request;
+          
+          storage.setInviteStatus(request.id, 'rejected');
+          
+          if (isMatchRequest) {
+            storage.updateMatchRequestStatus(request.id, 'rejected');
+          }
+
+          setInviteStatus('rejected');
+          
           Taro.showToast({
             title: '已拒绝',
             icon: 'none'
           });
+          
           setTimeout(() => {
             Taro.navigateBack();
           }, 1500);
@@ -195,18 +261,34 @@ const InvitePage: React.FC = () => {
       </View>
 
       <View className={styles.actionButtons}>
-        <ActionButton
-          text="拒绝"
-          type="secondary"
-          size="large"
-          onClick={handleReject}
-        />
-        <ActionButton
-          text="接受邀约"
-          type="primary"
-          size="large"
-          onClick={handleAccept}
-        />
+        {inviteStatus === 'pending' && (
+          <>
+            <ActionButton
+              text="拒绝"
+              type="secondary"
+              size="large"
+              onClick={handleReject}
+            />
+            <ActionButton
+              text="接受邀约"
+              type="primary"
+              size="large"
+              onClick={handleAccept}
+            />
+          </>
+        )}
+        {inviteStatus === 'accepted' && (
+          <View style={{ width: '100%', textAlign: 'center' }}>
+            <Text style={{ fontSize: '32rpx', color: '#00B894', fontWeight: '600' }}>✓ 已接受邀约</Text>
+            <Text style={{ fontSize: '24rpx', color: '#636E72', marginTop: '16rpx' }}>正在跳转到行程中...</Text>
+          </View>
+        )}
+        {inviteStatus === 'rejected' && (
+          <View style={{ width: '100%', textAlign: 'center' }}>
+            <Text style={{ fontSize: '32rpx', color: '#E17055', fontWeight: '600' }}>✕ 已拒绝</Text>
+            <Text style={{ fontSize: '24rpx', color: '#636E72', marginTop: '16rpx' }}>正在返回...</Text>
+          </View>
+        )}
       </View>
     </View>
   );

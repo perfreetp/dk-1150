@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, Switch } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
@@ -6,12 +6,23 @@ import RecordCard from '@/components/RecordCard';
 import ActionButton from '@/components/ActionButton';
 import { mockRecords, mockReviews, mockUserStats, privacyOptions } from '@/data/mockRecords';
 import { Record } from '@/types/records';
+import { storage } from '@/utils/storage';
 
 const RecordsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'records' | 'reviews'>('records');
   const [privacySettings, setPrivacySettings] = useState(privacyOptions);
+  const [records, setRecords] = useState<Record[]>([]);
 
-  const completedRecords = mockRecords.filter(r => r.status === 'completed');
+  useEffect(() => {
+    const savedRecords = storage.getRecords();
+    if (savedRecords.length > 0) {
+      setRecords(savedRecords);
+    } else {
+      setRecords(mockRecords);
+    }
+  }, []);
+
+  const completedRecords = records.filter(r => r.status === 'completed');
 
   const handlePrivacyChange = (id: string, value: boolean) => {
     setPrivacySettings(settings =>

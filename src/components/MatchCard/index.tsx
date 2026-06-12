@@ -6,13 +6,18 @@ import { MatchRequest } from '@/types/match';
 import { requestTypeOptions } from '@/data/mockWeekendRequests';
 import ActionButton from '@/components/ActionButton';
 
+interface MatchRequestWithStatus extends MatchRequest {
+  status?: 'available' | 'accepted' | 'rejected';
+}
+
 interface MatchCardProps {
-  request: MatchRequest;
+  request: MatchRequestWithStatus;
   onAccept?: () => void;
 }
 
 const MatchCard: React.FC<MatchCardProps> = ({ request, onAccept }) => {
   const typeInfo = requestTypeOptions.find(opt => opt.value === request.type);
+  const status = request.status || 'available';
 
   const costMap = {
     free: '免费',
@@ -21,28 +26,17 @@ const MatchCard: React.FC<MatchCardProps> = ({ request, onAccept }) => {
   };
 
   const handleClick = () => {
-    Taro.navigateTo({
-      url: `/pages/invite/index?id=${request.id}&type=match`
-    });
+    if (status === 'available') {
+      Taro.navigateTo({
+        url: `/pages/invite/index?id=${request.id}&type=match`
+      });
+    }
   };
 
   const handleAccept = (e) => {
     e.stopPropagation();
     if (onAccept) {
       onAccept();
-    } else {
-      Taro.showModal({
-        title: '确认接单',
-        content: `确定要接下"${request.title}"这个请求吗？`,
-        success: (res) => {
-          if (res.confirm) {
-            Taro.showToast({
-              title: '接单成功',
-              icon: 'success'
-            });
-          }
-        }
-      });
     }
   };
 
@@ -93,12 +87,24 @@ const MatchCard: React.FC<MatchCardProps> = ({ request, onAccept }) => {
         <View className={styles.costBadge}>
           <Text className={styles.costText}>{costMap[request.costType]}</Text>
         </View>
-        <ActionButton
-          text="接单"
-          type="primary"
-          size="small"
-          onClick={handleAccept}
-        />
+        {status === 'available' && (
+          <ActionButton
+            text="接单"
+            type="primary"
+            size="small"
+            onClick={handleAccept}
+          />
+        )}
+        {status === 'accepted' && (
+          <View className={styles.acceptedBadge}>
+            <Text className={styles.acceptedText}>✓ 已接单</Text>
+          </View>
+        )}
+        {status === 'rejected' && (
+          <View className={styles.rejectedBadge}>
+            <Text className={styles.rejectedText}>已拒绝</Text>
+          </View>
+        )}
       </View>
     </View>
   );

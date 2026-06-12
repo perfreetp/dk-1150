@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, Input, Textarea } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
@@ -7,9 +7,10 @@ import ActionButton from '@/components/ActionButton';
 import TagSelector from '@/components/TagSelector';
 import { mockWeekendRequests, requestTypeOptions, timeSlotOptions, genderOptions, costOptions } from '@/data/mockWeekendRequests';
 import { WeekendRequest, RequestFormData } from '@/types/weekend';
+import { storage } from '@/utils/storage';
 
 const WeekendPage: React.FC = () => {
-  const [requests] = useState<WeekendRequest[]>(mockWeekendRequests);
+  const [requests, setRequests] = useState<WeekendRequest[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState<RequestFormData>({
     type: 'exhibition',
@@ -25,6 +26,15 @@ const WeekendPage: React.FC = () => {
     chatBoundary: ''
   });
 
+  useEffect(() => {
+    const savedRequests = storage.getMyRequests();
+    if (savedRequests.length > 0) {
+      setRequests(savedRequests);
+    } else {
+      setRequests(mockWeekendRequests);
+    }
+  }, []);
+
   const handlePublish = () => {
     if (!formData.title || !formData.date || !formData.startTime || !formData.locationName) {
       Taro.showToast({
@@ -33,6 +43,31 @@ const WeekendPage: React.FC = () => {
       });
       return;
     }
+
+    const newRequest: WeekendRequest = {
+      id: `req_${Date.now()}`,
+      type: formData.type,
+      title: formData.title,
+      description: formData.description,
+      timeSlot: {
+        date: formData.date,
+        startTime: formData.startTime,
+        endTime: formData.endTime
+      },
+      location: {
+        name: formData.locationName,
+        address: formData.locationAddress
+      },
+      genderPreference: formData.genderPreference,
+      costType: formData.costType,
+      chatBoundary: formData.chatBoundary,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+
+    const updatedRequests = [newRequest, ...requests];
+    setRequests(updatedRequests);
+    storage.saveMyRequests(updatedRequests);
 
     Taro.showToast({
       title: '发布成功',

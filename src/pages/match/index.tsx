@@ -1,14 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import MatchCard from '@/components/MatchCard';
 import { mockMatchRequests } from '@/data/mockMatchRequests';
 import { MatchRequest } from '@/types/match';
+import { storage } from '@/utils/storage';
+
+interface MatchRequestWithStatus extends MatchRequest {
+  status: 'available' | 'accepted' | 'rejected';
+}
 
 const MatchPage: React.FC = () => {
-  const [requests] = useState<MatchRequest[]>(mockMatchRequests);
+  const [requests, setRequests] = useState<MatchRequestWithStatus[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
+
+  useEffect(() => {
+    const savedStatuses = storage.getMatchRequests();
+    const requestsWithStatus = mockMatchRequests.map(req => {
+      const savedStatus = savedStatuses?.find(s => s.id === req.id);
+      return {
+        ...req,
+        status: savedStatus?.status || 'available'
+      } as MatchRequestWithStatus;
+    });
+    setRequests(requestsWithStatus);
+  }, []);
+
+  const handleAccept = (requestId: string) => {
+    const updatedRequests = requests.map(req =>
+      req.id === requestId ? { ...req, status: 'accepted' as const } : req
+    );
+    setRequests(updatedRequests);
+    storage.saveMatchRequests(updatedRequests);
+    
+    Taro.showToast({
+      title: '接单成功',
+      icon: 'success'
+    });
+  };
 
   const filterOptions = [
     { value: 'all', label: '全部' },
@@ -22,6 +52,8 @@ const MatchPage: React.FC = () => {
   const filteredRequests = activeFilter === 'all'
     ? requests
     : requests.filter(req => req.type === activeFilter);
+
+  const availableCount = requests.filter(r => r.status === 'available').length;
 
   const onPullDownRefresh = () => {
     setTimeout(() => {
@@ -54,13 +86,17 @@ const MatchPage: React.FC = () => {
 
       <ScrollView scrollY className={styles.content} onScrollToLower={() => {}}>
         <View className={styles.sectionTitle}>
-          <Text>可匹配的请求 ({filteredRequests.length})</Text>
+          <Text>可匹配的请求 ({availableCount})</Text>
         </View>
 
         {filteredRequests.length > 0 ? (
           <View className={styles.requestList}>
             {filteredRequests.map(request => (
-              <MatchCard key={request.id} request={request} />
+              <MatchCard 
+                key={request.id} 
+                request={request} 
+                onAccept={() => handleAccept(request.id)}
+              />
             ))}
           </View>
         ) : (

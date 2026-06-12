@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, Textarea } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
@@ -6,12 +6,29 @@ import ActionButton from '@/components/ActionButton';
 import ActionButtonGroup from '@/components/ActionButtonGroup';
 import { mockJourneys, journeyActions } from '@/data/mockJourneys';
 import { Journey } from '@/types/journey';
+import { storage } from '@/utils/storage';
 
 const JourneyPage: React.FC = () => {
-  const [journeys] = useState<Journey[]>(mockJourneys);
+  const [journeys, setJourneys] = useState<Journey[]>([]);
   const [note, setNote] = useState('');
+  const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
 
-  const currentJourney = journeys.find(j => j.status === 'ongoing' || j.status === 'confirmed');
+  useEffect(() => {
+    const savedJourneys = storage.getJourneys();
+    if (savedJourneys.length > 0) {
+      setJourneys(savedJourneys);
+      const activeJourney = savedJourneys.find(j => 
+        j.status === 'ongoing' || j.status === 'confirmed' || j.status === 'completed'
+      );
+      setCurrentJourney(activeJourney || null);
+    } else {
+      setJourneys(mockJourneys);
+      const activeJourney = mockJourneys.find(j => 
+        j.status === 'ongoing' || j.status === 'confirmed'
+      );
+      setCurrentJourney(activeJourney || null);
+    }
+  }, []);
 
   const statusMap = {
     confirmed: '已确认',
@@ -22,6 +39,8 @@ const JourneyPage: React.FC = () => {
   };
 
   const handleAction = (actionId: string) => {
+    if (!currentJourney) return;
+
     switch (actionId) {
       case 'voice':
         Taro.showModal({
@@ -61,6 +80,15 @@ const JourneyPage: React.FC = () => {
           content: '确定要提前结束本次行程吗？',
           success: (res) => {
             if (res.confirm) {
+              const updatedJourney = { ...currentJourney, status: 'completed' as const };
+              setCurrentJourney(updatedJourney);
+              
+              const updatedJourneys = journeys.map(j => 
+                j.id === currentJourney.id ? updatedJourney : j
+              );
+              setJourneys(updatedJourneys);
+              storage.saveJourneys(updatedJourneys);
+
               Taro.showToast({
                 title: '行程已结束',
                 icon: 'success'
@@ -84,16 +112,45 @@ const JourneyPage: React.FC = () => {
         });
         break;
       case 'note':
-        Taro.showToast({
-          title: '添加笔记成功',
-          icon: 'success'
-        });
-        setNote('');
+        if (note.trim()) {
+          const updatedNotes = [...currentJourney.notes, note.trim()];
+          const updatedJourney = { ...currentJourney, notes: updatedNotes };
+          setCurrentJourney(updatedJourney);
+          
+          const updatedJourneys = journeys.map(j => 
+            j.id === currentJourney.id ? updatedJourney : j
+          );
+          setJourneys(updatedJourneys);
+          storage.saveJourneys(updatedJourneys);
+          
+          Taro.showToast({
+            title: '笔记已添加',
+            icon: 'success'
+          });
+          setNote('');
+        } else {
+          Taro.showToast({
+            title: '请输入笔记内容',
+            icon: 'none'
+          });
+        }
         break;
       case 'photo':
         Taro.chooseImage({
           count: 1,
-          success: () => {
+          sourceType: ['album', 'camera'],
+          success: (res) => {
+            const tempFilePath = res.tempFilePaths[0];
+            const updatedPhotos = [...currentJourney.photos, tempFilePath];
+            const updatedJourney = { ...currentJourney, photos: updatedPhotos };
+            setCurrentJourney(updatedJourney);
+            
+            const updatedJourneys = journeys.map(j => 
+              j.id === currentJourney.id ? updatedJourney : j
+            );
+            setJourneys(updatedJourneys);
+            storage.saveJourneys(updatedJourneys);
+            
             Taro.showToast({
               title: '照片已保存',
               icon: 'success'
@@ -105,9 +162,46 @@ const JourneyPage: React.FC = () => {
   };
 
   const handleEvaluate = () => {
-    Taro.showToast({
-      title: '评价成功',
-      icon: 'success'
+    if (!currentJourney) return;
+    
+    Taro.showModal({
+      title: '评价',
+      editable: true,
+      placeholderText: '请输入您的评价...',
+      success: (res) => {
+        if (res.confirm && res.content) {
+          const newRecord: import('@/types/records').Record = {
+            id: `record_${Date.now()}`,
+            type: 'journey',
+            date: new Date().toISOString().split('T')[0],
+            partnerName: currentJourney.partnerInfo.name,
+            partnerAvatar: currentJourney.partnerInfo.avatar,
+            activity: currentJourney.requestInfo.title,
+            duration: '1小时',
+            rating: 5.0,
+            status: 'completed',
+            evaluation: {
+              rating: 5.0,
+              comment: res.content,
+              tags: ['准时', '友好']
+            }
+          };
+          
+          storage.addRecord(newRecord);
+          
+          const completedJourney = { ...currentJourney, status: 'completed' as const };
+          const updatedJourneys = journeys.map(j => 
+            j.id === currentJourney.id ? completedJourney : j
+          );
+          setJourneys(updatedJourneys);
+          storage.saveJourneys(updatedJourneys);
+          
+          Taro.showToast({
+            title: '评价成功',
+            icon: 'success'
+          });
+        }
+      }
     });
   };
 

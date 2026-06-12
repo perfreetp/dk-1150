@@ -1,0 +1,75 @@
+@use '@/styles/variables.scss' as *;
+
+.buttonContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-sm;
+}
+
+.buttonItem {
+  padding: $spacing-sm $spacing-md;
+  background-color: $color-bg-card;
+  border: 2rpx solid $color-border;
+  border-radius: $radius-button;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.selectedButtonItem {
+  background-color: $color-primary;
+  border-color: $color-primary;
+}
+
+.text {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+}
+
+.selectedText {
+  font-size: $font-size-sm;
+  color: $color-text-white;
+  font-weight: $font-weight-medium;
+}
+
+.cardContainer {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-md;
+}
+
+.cardItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-lg $spacing-md;
+  background-color: $color-bg-card;
+  border: 2rpx solid $color-border;
+  border-radius: $radius-md;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.selectedCardItem {
+  border-color: $color-primary;
+  background-color: $color-bg-hover;
+}
+
+.cardIcon {
+  font-size: 48rpx;
+  margin-bottom: $spacing-xs;
+}
+
+.cardLabel {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+  text-align: center;
+}

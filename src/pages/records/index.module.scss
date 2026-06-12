@@ -1,0 +1,256 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #FFF5F5 0%, $color-bg-page 100%);
+  padding-bottom: 120rpx;
+}
+
+.header {
+  padding: $spacing-lg $page-padding;
+  background-color: $color-bg-card;
+}
+
+.title {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.statsCard {
+  background: linear-gradient(135deg, $color-primary 0%, $color-primary-light 100%);
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  color: $color-text-white;
+}
+
+.statsTitle {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  margin-bottom: $spacing-md;
+  opacity: 0.9;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $spacing-md;
+  margin-bottom: $spacing-md;
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statValue {
+  font-size: $font-size-xxl;
+  font-weight: $font-weight-bold;
+  margin-bottom: $spacing-xs;
+}
+
+.statLabel {
+  font-size: $font-size-xs;
+  opacity: 0.9;
+}
+
+.tagsSection {
+  padding-top: $spacing-md;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.3);
+}
+
+.tagsLabel {
+  font-size: $font-size-sm;
+  opacity: 0.9;
+  margin-bottom: $spacing-sm;
+}
+
+.tagsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.tag {
+  background-color: rgba(255, 255, 255, 0.3);
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-button;
+}
+
+.tagText {
+  font-size: $font-size-xs;
+  color: $color-text-white;
+}
+
+.tabBar {
+  display: flex;
+  background-color: $color-bg-card;
+  padding: $spacing-sm $page-padding;
+  border-bottom: 1rpx solid $color-border;
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: $spacing-sm 0;
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+  font-weight: $font-weight-medium;
+  transition: all $transition-base;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.activeTab {
+  color: $color-primary;
+  border-bottom: 4rpx solid $color-primary;
+}
+
+.content {
+  padding: $page-padding;
+}
+
+.sectionTitle {
+  font-size: $font-size-lg;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-md;
+}
+
+.recordList {
+  margin-top: $spacing-sm;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-xl * 2 0;
+}
+
+.emptyIcon {
+  font-size: 120rpx;
+  margin-bottom: $spacing-lg;
+}
+
+.emptyText {
+  font-size: $font-size-md;
+  color: $color-text-tertiary;
+}
+
+.reviewItem {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-card;
+}
+
+.reviewHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: $radius-round;
+  margin-right: $spacing-md;
+}
+
+.reviewInfo {
+  flex: 1;
+}
+
+.reviewerName {
+  font-size: $font-size-md;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.reviewDate {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+}
+
+.reviewRating {
+  font-size: $font-size-lg;
+  color: $color-warning;
+  font-weight: $font-weight-semibold;
+}
+
+.reviewContent {
+  margin-bottom: $spacing-md;
+}
+
+.reviewText {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  line-height: $line-height-normal;
+}
+
+.reviewTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-xs;
+}
+
+.reviewTag {
+  background-color: $color-bg-hover;
+  padding: $spacing-xs $spacing-sm;
+  border-radius: $radius-xs;
+}
+
+.reviewTagText {
+  font-size: $font-size-xs;
+  color: $color-primary;
+}
+
+.settingSection {
+  margin-top: $spacing-lg;
+}
+
+.settingItem {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-sm;
+  box-shadow: $shadow-card;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.settingInfo {
+  flex: 1;
+}
+
+.settingLabel {
+  font-size: $font-size-md;
+  font-weight: $font-weight-medium;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.settingDescription {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+}
+
+.settingIcon {
+  font-size: 40rpx;
+  margin-left: $spacing-md;
+}
+
+.actionButton {
+  margin-top: $spacing-md;
+}

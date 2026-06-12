@@ -1,0 +1,42 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $spacing-md;
+  padding: $spacing-lg;
+}
+
+.actionItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-md 0;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.iconWrapper {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: $radius-md;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: $spacing-xs;
+  box-shadow: $shadow-card;
+}
+
+.icon {
+  font-size: 48rpx;
+}
+
+.label {
+  font-size: $font-size-xs;
+  color: $color-text-secondary;
+  text-align: center;
+  font-weight: $font-weight-medium;
+}

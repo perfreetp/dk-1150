@@ -1,0 +1,203 @@
+@use '@/styles/variables.scss' as *;
+
+.container {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #FFF5F5 0%, $color-bg-page 100%);
+  padding-bottom: 180rpx;
+}
+
+.content {
+  padding: $page-padding;
+}
+
+.userCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-card;
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: $radius-round;
+  margin-right: $spacing-lg;
+}
+
+.userInfo {
+  flex: 1;
+}
+
+.userName {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-xs;
+}
+
+.userMeta {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
+  margin-bottom: $spacing-xs;
+}
+
+.ratingRow {
+  display: flex;
+  align-items: center;
+}
+
+.rating {
+  font-size: $font-size-md;
+  color: $color-warning;
+  font-weight: $font-weight-semibold;
+  margin-right: $spacing-xs;
+}
+
+.verifiedBadge {
+  background-color: $color-success;
+  padding: 4rpx $spacing-xs;
+  border-radius: $radius-xs;
+  margin-left: $spacing-sm;
+}
+
+.verifiedText {
+  font-size: $font-size-xs;
+  color: $color-text-white;
+  font-weight: $font-weight-medium;
+}
+
+.requestCard {
+  background-color: $color-bg-card;
+  border-radius: $radius-lg;
+  padding: $spacing-lg;
+  margin-bottom: $spacing-lg;
+  box-shadow: $shadow-card;
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.typeTag {
+  display: flex;
+  align-items: center;
+  background-color: $color-bg-hover;
+  padding: $spacing-xs $spacing-md;
+  border-radius: $radius-sm;
+}
+
+.typeIcon {
+  font-size: $font-size-md;
+  margin-right: $spacing-xs;
+}
+
+.typeText {
+  font-size: $font-size-sm;
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+}
+
+.title {
+  font-size: $font-size-xl;
+  font-weight: $font-weight-bold;
+  color: $color-text-primary;
+  margin-bottom: $spacing-sm;
+  display: block;
+}
+
+.description {
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+  line-height: $line-height-normal;
+  margin-bottom: $spacing-lg;
+  display: block;
+}
+
+.infoSection {
+  margin-bottom: $spacing-md;
+}
+
+.infoItem {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: $spacing-md;
+  padding: $spacing-md;
+  background-color: $color-bg-page;
+  border-radius: $radius-md;
+}
+
+.infoIcon {
+  font-size: 40rpx;
+  margin-right: $spacing-md;
+  width: 60rpx;
+  text-align: center;
+}
+
+.infoContent {
+  flex: 1;
+}
+
+.infoLabel {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-xs;
+  display: block;
+}
+
+.infoValue {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  font-weight: $font-weight-medium;
+  display: block;
+}
+
+.boundaryCard {
+  background-color: #FFF5F5;
+  border-radius: $radius-md;
+  padding: $spacing-md;
+  margin-top: $spacing-md;
+  border-left: 4rpx solid $color-primary;
+}
+
+.boundaryLabel {
+  font-size: $font-size-sm;
+  color: $color-primary;
+  font-weight: $font-weight-semibold;
+  margin-bottom: $spacing-xs;
+  display: block;
+}
+
+.boundaryText {
+  font-size: $font-size-md;
+  color: $color-text-primary;
+  line-height: $line-height-normal;
+  display: block;
+}
+
+.actionButtons {
+  position: fixed;
+  bottom: 120rpx;
+  left: $page-padding;
+  right: $page-padding;
+  display: flex;
+  gap: $spacing-md;
+  z-index: 100;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.loadingText {
+  font-size: $font-size-md;
+  color: $color-text-secondary;
+}

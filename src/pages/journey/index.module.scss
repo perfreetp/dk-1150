@@ -214,6 +214,28 @@
   height: 100%;
 }
 
+.photoOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity $transition-base;
+  
+  .photoItem:active & {
+    opacity: 1;
+  }
+}
+
+.photoIcon {
+  font-size: 48rpx;
+}
+
 .emptyState {
   display: flex;
   flex-direction: column;
@@ -264,7 +286,7 @@
 .locationHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: $spacing-sm;
 }
 
@@ -272,6 +294,12 @@
   font-size: $font-size-md;
   font-weight: $font-weight-semibold;
   color: $color-success;
+}
+
+.locationDuration {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-top: $spacing-xs;
 }
 
 .locationClose {
@@ -284,6 +312,15 @@
   &:active {
     opacity: 0.8;
   }
+}
+
+.locationInfo {
+  margin-bottom: $spacing-sm;
+}
+
+.locationPartner {
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
 }
 
 .distanceInfo {
@@ -311,26 +348,148 @@
   transition: width $transition-base;
 }
 
-.photoOverlay {
-  position: absolute;
+.timeline {
+  margin-bottom: $spacing-md;
+}
+
+.timelineItem {
+  display: flex;
+  margin-bottom: $spacing-md;
+  position: relative;
+
+  &:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 20rpx;
+    top: 48rpx;
+    bottom: -$spacing-md;
+    width: 2rpx;
+    background-color: $color-border;
+  }
+}
+
+.timelineDot {
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: $radius-round;
+  background-color: $color-bg-hover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: $spacing-md;
+  flex-shrink: 0;
+}
+
+.timelineIcon {
+  font-size: 24rpx;
+}
+
+.timelineContent {
+  flex: 1;
+  padding-bottom: $spacing-md;
+}
+
+.timelineTime {
+  font-size: $font-size-xs;
+  color: $color-text-tertiary;
+  margin-bottom: $spacing-xs;
+  display: block;
+}
+
+.timelineText {
+  font-size: $font-size-sm;
+  color: $color-text-primary;
+  line-height: $line-height-normal;
+  display: block;
+}
+
+.photoHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $spacing-md;
+}
+
+.viewAllText {
+  font-size: $font-size-sm;
+  color: $color-primary;
+  font-weight: $font-weight-medium;
+
+  &:active {
+    opacity: 0.8;
+  }
+}
+
+.photoViewerOverlay {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.95);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+}
+
+.photoViewerHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: $spacing-lg;
+  padding-top: 60rpx;
+}
+
+.photoViewerTitle {
+  font-size: $font-size-md;
+  color: $color-text-white;
+  font-weight: $font-weight-medium;
+}
+
+.photoViewerClose {
+  font-size: 48rpx;
+  color: $color-text-white;
+  padding: $spacing-xs;
+}
+
+.photoSwiper {
+  flex: 1;
+  width: 100%;
+}
+
+.photoViewerImage {
+  width: 100%;
+  height: 100%;
+}
+
+.photoViewerFooter {
+  padding: $spacing-lg;
+  padding-bottom: 80rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.deletePhotoButton {
   display: flex;
   align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity $transition-base;
+  background-color: rgba(255, 255, 255, 0.2);
+  padding: $spacing-md $spacing-xl;
+  border-radius: $radius-button;
   
-  .photoItem:active & {
-    opacity: 1;
+  &:active {
+    opacity: 0.8;
   }
 }
 
-.photoIcon {
-  font-size: 48rpx;
+.deletePhotoIcon {
+  font-size: 40rpx;
+  margin-right: $spacing-xs;
+}
+
+.deletePhotoText {
+  font-size: $font-size-md;
+  color: $color-text-white;
+  font-weight: $font-weight-medium;
 }
 
 .overlay {

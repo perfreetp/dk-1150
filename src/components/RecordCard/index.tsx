@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Image } from '@tarojs/components';
+import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import { Record } from '@/types/records';
 
@@ -15,8 +16,14 @@ const RecordCard: React.FC<RecordCardProps> = ({ record }) => {
   };
   const status = statusMap[record.status];
 
+  const handleClick = () => {
+    Taro.navigateTo({
+      url: `/pages/record-detail/index?id=${record.id}`
+    });
+  };
+
   return (
-    <View className={styles.card}>
+    <View className={styles.card} onClick={handleClick}>
       <View className={styles.header}>
         <Image
           src={record.partnerAvatar}

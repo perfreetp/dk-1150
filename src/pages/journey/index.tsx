@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, Textarea } from '@tarojs/components';
+import { View, Text, Image, Textarea, Swiper, SwiperItem } from '@tarojs/components';
 import Taro from '@tarojs/taro';
 import styles from './index.module.scss';
 import ActionButton from '@/components/ActionButton';
@@ -8,13 +8,23 @@ import { mockJourneys, journeyActions } from '@/data/mockJourneys';
 import { Journey } from '@/types/journey';
 import { storage } from '@/utils/storage';
 
+interface TimelineEvent {
+  time: string;
+  type: 'note' | 'location_on' | 'location_off' | 'photo' | 'end' | 'extend' | 'confirm';
+  content: string;
+  icon: string;
+}
+
 const JourneyPage: React.FC = () => {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [note, setNote] = useState('');
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isLocationSharing, setIsLocationSharing] = useState(false);
+  const [locationStartTime, setLocationStartTime] = useState<string>('');
   const [distance, setDistance] = useState<number>(500);
+  const [showPhotoViewer, setShowPhotoViewer] = useState(false);
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
   useEffect(() => {
     const savedJourneys = storage.getJourneys();
@@ -41,10 +51,85 @@ const JourneyPage: React.FC = () => {
     completed: '已完成'
   };
 
+  const getTimelineEvents = (): TimelineEvent[] => {
+    if (!currentJourney) return [];
+    
+    const events: TimelineEvent[] = [];
+    const now = new Date();
+    
+    if (currentJourney.status === 'confirmed') {
+      events.push({
+        time: currentJourney.requestInfo.timeSlot.startTime,
+        type: 'confirm',
+        content: '行程已确认，等待出发前确认',
+        icon: '✅'
+      });
+    }
+    
+    if (currentJourney.status === 'ongoing' || currentJourney.status === 'completed') {
+      events.push({
+        time: currentJourney.startTime ? new Date(currentJourney.startTime).toLocaleTimeString() : now.toLocaleTimeString(),
+        type: 'confirm',
+        content: '确认出发，行程开始',
+        icon: '🚀'
+      });
+    }
+    
+    currentJourney.notes.forEach(note => {
+      let icon = '📝';
+      let type: TimelineEvent['type'] = 'note';
+      
+      if (note.includes('开启了位置共享')) {
+        icon = '📍';
+        type = 'location_on';
+      } else if (note.includes('关闭了位置共享')) {
+        icon = '🔒';
+        type = 'location_off';
+      } else if (note.includes('拍摄了一张照片')) {
+        icon = '📷';
+        type = 'photo';
+      } else if (note.includes('提前结束')) {
+        icon = '🏁';
+        type = 'end';
+      } else if (note.includes('申请延长')) {
+        icon = '⏰';
+        type = 'extend';
+      }
+      
+      const timeMatch = note.match(/\[(.*?)\]/);
+      events.push({
+        time: timeMatch ? timeMatch[1] : now.toLocaleTimeString(),
+        type,
+        content: note,
+        icon
+      });
+    });
+    
+    if (currentJourney.status === 'completed') {
+      events.push({
+        time: currentJourney.endTime ? new Date(currentJourney.endTime).toLocaleTimeString() : now.toLocaleTimeString(),
+        type: 'end',
+        content: '行程已结束',
+        icon: '🏁'
+      });
+    }
+    
+    return events.sort((a, b) => {
+      const timeA = new Date(`2000/01/01 ${a.time}`).getTime();
+      const timeB = new Date(`2000/01/01 ${b.time}`).getTime();
+      return timeA - timeB;
+    });
+  };
+
   const handleConfirmStart = () => {
     if (!currentJourney) return;
     
-    const updatedJourney = { ...currentJourney, status: 'ongoing' as const };
+    const now = new Date().toISOString();
+    const updatedJourney = { 
+      ...currentJourney, 
+      status: 'ongoing' as const,
+      startTime: now
+    };
     setCurrentJourney(updatedJourney);
     
     const updatedJourneys = journeys.map(j => 
@@ -80,17 +165,20 @@ const JourneyPage: React.FC = () => {
         break;
       case 'location':
         if (isLocationSharing) {
+          const endTime = new Date().toLocaleTimeString();
           setIsLocationSharing(false);
-          const noteRecord = `[${new Date().toLocaleTimeString()}] 关闭了位置共享`;
+          const noteRecord = `[${endTime}] 🔒 关闭了位置共享`;
           saveNoteToJourney(noteRecord);
           Taro.showToast({
             title: '定位已关闭',
             icon: 'success'
           });
         } else {
+          const startTime = new Date().toLocaleTimeString();
+          setLocationStartTime(startTime);
           setIsLocationSharing(true);
           setDistance(Math.floor(Math.random() * 1000) + 200);
-          const noteRecord = `[${new Date().toLocaleTimeString()}] 开启了位置共享`;
+          const noteRecord = `[${startTime}] 📍 开启了位置共享给 ${currentJourney.partnerInfo.name}`;
           saveNoteToJourney(noteRecord);
           Taro.showToast({
             title: '定位已开启',
@@ -118,14 +206,20 @@ const JourneyPage: React.FC = () => {
           placeholderText: '请输入提前结束的原因（选填）',
           success: (res) => {
             if (res.confirm) {
-              let endNote = `[${new Date().toLocaleTimeString()}] 提前结束了行程`;
+              const endTime = new Date().toLocaleTimeString();
+              let endNote = `[${endTime}] 🏁 提前结束了行程`;
               if (res.content) {
                 endNote += `，原因：${res.content}`;
               }
               
               saveNoteToJourney(endNote);
               
-              const updatedJourney = { ...currentJourney, status: 'completed' as const };
+              const now = new Date().toISOString();
+              const updatedJourney = { 
+                ...currentJourney, 
+                status: 'completed' as const,
+                endTime: now
+              };
               setCurrentJourney(updatedJourney);
               
               const updatedJourneys = journeys.map(j => 
@@ -149,7 +243,8 @@ const JourneyPage: React.FC = () => {
           placeholderText: '请输入申请延长的原因（选填）',
           success: (res) => {
             if (res.confirm) {
-              let extendNote = `[${new Date().toLocaleTimeString()}] 申请延长30分钟`;
+              const extendTime = new Date().toLocaleTimeString();
+              let extendNote = `[${extendTime}] ⏰ 申请延长30分钟`;
               if (res.content) {
                 extendNote += `，原因：${res.content}`;
               }
@@ -166,7 +261,8 @@ const JourneyPage: React.FC = () => {
         break;
       case 'note':
         if (note.trim()) {
-          const noteRecord = `[${new Date().toLocaleTimeString()}] ${note.trim()}`;
+          const noteTime = new Date().toLocaleTimeString();
+          const noteRecord = `[${noteTime}] 📝 ${note.trim()}`;
           saveNoteToJourney(noteRecord);
           Taro.showToast({
             title: '笔记已添加',
@@ -186,8 +282,8 @@ const JourneyPage: React.FC = () => {
           sourceType: ['album', 'camera'],
           success: (res) => {
             const tempFilePath = res.tempFilePaths[0];
-            
-            const photoRecord = `[${new Date().toLocaleTimeString()}] 拍摄了一张照片`;
+            const photoTime = new Date().toLocaleTimeString();
+            const photoRecord = `[${photoTime}] 📷 拍摄了一张照片`;
             saveNoteToJourney(photoRecord);
             
             const updatedPhotos = [...currentJourney.photos, tempFilePath];
@@ -222,6 +318,44 @@ const JourneyPage: React.FC = () => {
     );
     setJourneys(updatedJourneys);
     storage.saveJourneys(updatedJourneys);
+  };
+
+  const handlePhotoClick = (index: number) => {
+    setCurrentPhotoIndex(index);
+    setShowPhotoViewer(true);
+  };
+
+  const handleDeletePhoto = (index: number) => {
+    if (!currentJourney) return;
+    
+    Taro.showModal({
+      title: '删除照片',
+      content: '确定要删除这张照片吗？',
+      success: (res) => {
+        if (res.confirm) {
+          const updatedPhotos = currentJourney.photos.filter((_, i) => i !== index);
+          const updatedJourney = { ...currentJourney, photos: updatedPhotos };
+          setCurrentJourney(updatedJourney);
+          
+          const updatedJourneys = journeys.map(j => 
+            j.id === currentJourney.id ? updatedJourney : j
+          );
+          setJourneys(updatedJourneys);
+          storage.saveJourneys(updatedJourneys);
+          
+          Taro.showToast({
+            title: '照片已删除',
+            icon: 'success'
+          });
+          
+          if (updatedPhotos.length === 0) {
+            setShowPhotoViewer(false);
+          } else if (currentPhotoIndex >= updatedPhotos.length) {
+            setCurrentPhotoIndex(updatedPhotos.length - 1);
+          }
+        }
+      }
+    });
   };
 
   const handlePreviewPhoto = (photoUrl: string) => {
@@ -292,6 +426,15 @@ const JourneyPage: React.FC = () => {
     }, 1000);
   };
 
+  const getLocationDuration = () => {
+    if (!locationStartTime || !isLocationSharing) return '';
+    const start = new Date(`2000/01/01 ${locationStartTime}`);
+    const now = new Date();
+    const diff = Math.floor((now.getTime() - start.getTime()) / 1000 / 60);
+    if (diff < 60) return `${diff}分钟`;
+    return `${Math.floor(diff / 60)}小时${diff % 60}分钟`;
+  };
+
   if (!currentJourney) {
     return (
       <View className={styles.container}>
@@ -309,6 +452,8 @@ const JourneyPage: React.FC = () => {
       </View>
     );
   }
+
+  const timelineEvents = getTimelineEvents();
 
   return (
     <View className={styles.container}>
@@ -381,13 +526,19 @@ const JourneyPage: React.FC = () => {
         {isLocationSharing && currentJourney.status === 'ongoing' && (
           <View className={styles.locationCard}>
             <View className={styles.locationHeader}>
-              <Text className={styles.locationTitle}>📍 位置共享中</Text>
+              <View>
+                <Text className={styles.locationTitle}>📍 位置共享中</Text>
+                <Text className={styles.locationDuration}>已共享 {getLocationDuration()}</Text>
+              </View>
               <Text 
                 className={styles.locationClose}
                 onClick={() => handleAction('location')}
               >
                 关闭
               </Text>
+            </View>
+            <View className={styles.locationInfo}>
+              <Text className={styles.locationPartner}>共享给：{currentJourney.partnerInfo.name}</Text>
             </View>
             <View className={styles.distanceInfo}>
               <Text className={styles.distanceText}>
@@ -412,41 +563,67 @@ const JourneyPage: React.FC = () => {
         </View>
 
         <View className={styles.noteSection}>
-          <Text className={styles.noteTitle}>行程笔记</Text>
-          {currentJourney.notes.length > 0 && (
-            <View style={{ marginBottom: '16rpx' }}>
-              {currentJourney.notes.map((noteItem, index) => (
-                <View key={index} style={{ marginBottom: '8rpx', padding: '12rpx', backgroundColor: '#F8F9FA', borderRadius: '8rpx' }}>
-                  <Text style={{ fontSize: '26rpx', color: '#636E72' }}>{noteItem}</Text>
+          <Text className={styles.noteTitle}>📜 行程时间线</Text>
+          {timelineEvents.length > 0 ? (
+            <View className={styles.timeline}>
+              {timelineEvents.map((event, index) => (
+                <View key={index} className={styles.timelineItem}>
+                  <View className={styles.timelineDot}>
+                    <Text className={styles.timelineIcon}>{event.icon}</Text>
+                  </View>
+                  <View className={styles.timelineContent}>
+                    <Text className={styles.timelineTime}>{event.time}</Text>
+                    <Text className={styles.timelineText}>{event.content}</Text>
+                  </View>
                 </View>
               ))}
             </View>
+          ) : (
+            <Text className={styles.emptyText}>暂无时间线记录</Text>
           )}
-          <Textarea
-            className={styles.noteInput}
-            placeholder="记录本次行程的感受..."
-            value={note}
-            onInput={(e) => setNote(e.detail.value)}
-          />
-          <View style={{ marginTop: '16rpx', display: 'flex', justifyContent: 'flex-end' }}>
-            <ActionButton
-              text="添加笔记"
-              type="secondary"
-              size="small"
-              onClick={() => handleAction('note')}
-            />
-          </View>
+          
+          {currentJourney.status !== 'completed' && (
+            <>
+              <Textarea
+                className={styles.noteInput}
+                placeholder="记录本次行程的感受..."
+                value={note}
+                onInput={(e) => setNote(e.detail.value)}
+              />
+              <View style={{ marginTop: '16rpx', display: 'flex', justifyContent: 'flex-end' }}>
+                <ActionButton
+                  text="添加笔记"
+                  type="secondary"
+                  size="small"
+                  onClick={() => handleAction('note')}
+                />
+              </View>
+            </>
+          )}
         </View>
 
-        {currentJourney.photos.length > 0 && (
-          <View className={styles.noteSection}>
-            <Text className={styles.noteTitle}>行程照片 ({currentJourney.photos.length})</Text>
+        <View className={styles.noteSection}>
+          <View className={styles.photoHeader}>
+            <Text className={styles.noteTitle}>📷 行程照片 ({currentJourney.photos.length})</Text>
+            {currentJourney.photos.length > 0 && (
+              <Text 
+                className={styles.viewAllText}
+                onClick={() => {
+                  setCurrentPhotoIndex(0);
+                  setShowPhotoViewer(true);
+                }}
+              >
+                查看全部
+              </Text>
+            )}
+          </View>
+          {currentJourney.photos.length > 0 ? (
             <View className={styles.photoGrid}>
               {currentJourney.photos.map((photo, index) => (
                 <View 
                   key={index} 
                   className={styles.photoItem}
-                  onClick={() => handlePreviewPhoto(photo)}
+                  onClick={() => handlePhotoClick(index)}
                 >
                   <Image src={photo} className={styles.photo} mode="aspectFill" />
                   <View className={styles.photoOverlay}>
@@ -455,8 +632,10 @@ const JourneyPage: React.FC = () => {
                 </View>
               ))}
             </View>
-          </View>
-        )}
+          ) : (
+            <Text className={styles.emptyText}>暂无照片</Text>
+          )}
+        </View>
 
         {currentJourney.status === 'completed' && (
           <View className={styles.evaluateButton}>
@@ -531,6 +710,50 @@ const JourneyPage: React.FC = () => {
                 size="large"
                 onClick={handleConfirmStart}
               />
+            </View>
+          </View>
+        </>
+      )}
+
+      {showPhotoViewer && currentJourney.photos.length > 0 && (
+        <>
+          <View className={styles.photoViewerOverlay} onClick={() => setShowPhotoViewer(false)}>
+            <View className={styles.photoViewerHeader}>
+              <Text className={styles.photoViewerTitle}>
+                {currentPhotoIndex + 1} / {currentJourney.photos.length}
+              </Text>
+              <Text 
+                className={styles.photoViewerClose}
+                onClick={() => setShowPhotoViewer(false)}
+              >
+                ✕
+              </Text>
+            </View>
+            <Swiper
+              className={styles.photoSwiper}
+              current={currentPhotoIndex}
+              onChange={(e) => setCurrentPhotoIndex(e.detail.current)}
+              circular
+            >
+              {currentJourney.photos.map((photo, index) => (
+                <SwiperItem key={index}>
+                  <Image 
+                    src={photo} 
+                    className={styles.photoViewerImage}
+                    mode="aspectFit"
+                    onClick={() => handlePreviewPhoto(photo)}
+                  />
+                </SwiperItem>
+              ))}
+            </Swiper>
+            <View className={styles.photoViewerFooter}>
+              <View 
+                className={styles.deletePhotoButton}
+                onClick={() => handleDeletePhoto(currentPhotoIndex)}
+              >
+                <Text className={styles.deletePhotoIcon}>🗑️</Text>
+                <Text className={styles.deletePhotoText}>删除</Text>
+              </View>
             </View>
           </View>
         </>

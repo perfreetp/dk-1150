@@ -4,7 +4,8 @@ export default defineAppConfig({
     'pages/match/index',
     'pages/journey/index',
     'pages/records/index',
-    'pages/invite/index'
+    'pages/invite/index',
+    'pages/record-detail/index'
   ],
   window: {
     backgroundTextStyle: 'light',

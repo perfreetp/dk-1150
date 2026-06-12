@@ -12,6 +12,9 @@ const JourneyPage: React.FC = () => {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [note, setNote] = useState('');
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isLocationSharing, setIsLocationSharing] = useState(false);
+  const [distance, setDistance] = useState<number>(500);
 
   useEffect(() => {
     const savedJourneys = storage.getJourneys();
@@ -31,11 +34,31 @@ const JourneyPage: React.FC = () => {
   }, []);
 
   const statusMap = {
-    confirmed: '已确认',
+    confirmed: '待确认',
     arrived: '已到达',
     ongoing: '进行中',
     paused: '已暂停',
     completed: '已完成'
+  };
+
+  const handleConfirmStart = () => {
+    if (!currentJourney) return;
+    
+    const updatedJourney = { ...currentJourney, status: 'ongoing' as const };
+    setCurrentJourney(updatedJourney);
+    
+    const updatedJourneys = journeys.map(j => 
+      j.id === currentJourney.id ? updatedJourney : j
+    );
+    setJourneys(updatedJourneys);
+    storage.saveJourneys(updatedJourneys);
+    
+    setShowConfirmModal(false);
+    
+    Taro.showToast({
+      title: '行程已开始',
+      icon: 'success'
+    });
   };
 
   const handleAction = (actionId: string) => {
@@ -56,10 +79,24 @@ const JourneyPage: React.FC = () => {
         });
         break;
       case 'location':
-        Taro.showToast({
-          title: '定位已开启',
-          icon: 'success'
-        });
+        if (isLocationSharing) {
+          setIsLocationSharing(false);
+          const noteRecord = `[${new Date().toLocaleTimeString()}] 关闭了位置共享`;
+          saveNoteToJourney(noteRecord);
+          Taro.showToast({
+            title: '定位已关闭',
+            icon: 'success'
+          });
+        } else {
+          setIsLocationSharing(true);
+          setDistance(Math.floor(Math.random() * 1000) + 200);
+          const noteRecord = `[${new Date().toLocaleTimeString()}] 开启了位置共享`;
+          saveNoteToJourney(noteRecord);
+          Taro.showToast({
+            title: '定位已开启',
+            icon: 'success'
+          });
+        }
         break;
       case 'code':
         Taro.showModal({
@@ -76,10 +113,18 @@ const JourneyPage: React.FC = () => {
         break;
       case 'end':
         Taro.showModal({
-          title: '确认提前结束',
-          content: '确定要提前结束本次行程吗？',
+          title: '提前结束行程',
+          editable: true,
+          placeholderText: '请输入提前结束的原因（选填）',
           success: (res) => {
             if (res.confirm) {
+              let endNote = `[${new Date().toLocaleTimeString()}] 提前结束了行程`;
+              if (res.content) {
+                endNote += `，原因：${res.content}`;
+              }
+              
+              saveNoteToJourney(endNote);
+              
               const updatedJourney = { ...currentJourney, status: 'completed' as const };
               setCurrentJourney(updatedJourney);
               
@@ -100,9 +145,17 @@ const JourneyPage: React.FC = () => {
       case 'extend':
         Taro.showModal({
           title: '补时申请',
-          content: '申请延长30分钟',
+          editable: true,
+          placeholderText: '请输入申请延长的原因（选填）',
           success: (res) => {
             if (res.confirm) {
+              let extendNote = `[${new Date().toLocaleTimeString()}] 申请延长30分钟`;
+              if (res.content) {
+                extendNote += `，原因：${res.content}`;
+              }
+              
+              saveNoteToJourney(extendNote);
+              
               Taro.showToast({
                 title: '已发送申请',
                 icon: 'success'
@@ -113,16 +166,8 @@ const JourneyPage: React.FC = () => {
         break;
       case 'note':
         if (note.trim()) {
-          const updatedNotes = [...currentJourney.notes, note.trim()];
-          const updatedJourney = { ...currentJourney, notes: updatedNotes };
-          setCurrentJourney(updatedJourney);
-          
-          const updatedJourneys = journeys.map(j => 
-            j.id === currentJourney.id ? updatedJourney : j
-          );
-          setJourneys(updatedJourneys);
-          storage.saveJourneys(updatedJourneys);
-          
+          const noteRecord = `[${new Date().toLocaleTimeString()}] ${note.trim()}`;
+          saveNoteToJourney(noteRecord);
           Taro.showToast({
             title: '笔记已添加',
             icon: 'success'
@@ -142,22 +187,10 @@ const JourneyPage: React.FC = () => {
           success: (res) => {
             const tempFilePath = res.tempFilePaths[0];
             
-            const mockPhotoUrls = [
-              'https://picsum.photos/id/1011/300/300',
-              'https://picsum.photos/id/1025/300/300',
-              'https://picsum.photos/id/1035/300/300',
-              'https://picsum.photos/id/1040/300/300',
-              'https://picsum.photos/id/1043/300/300',
-              'https://picsum.photos/id/1050/300/300',
-              'https://picsum.photos/id/1052/300/300',
-              'https://picsum.photos/id/1055/300/300',
-              'https://picsum.photos/id/1060/300/300',
-              'https://picsum.photos/id/1065/300/300'
-            ];
+            const photoRecord = `[${new Date().toLocaleTimeString()}] 拍摄了一张照片`;
+            saveNoteToJourney(photoRecord);
             
-            const savedPhotoUrl = mockPhotoUrls[Math.floor(Math.random() * mockPhotoUrls.length)];
-            
-            const updatedPhotos = [...currentJourney.photos, savedPhotoUrl];
+            const updatedPhotos = [...currentJourney.photos, tempFilePath];
             const updatedJourney = { ...currentJourney, photos: updatedPhotos };
             setCurrentJourney(updatedJourney);
             
@@ -175,6 +208,34 @@ const JourneyPage: React.FC = () => {
         });
         break;
     }
+  };
+
+  const saveNoteToJourney = (noteRecord: string) => {
+    if (!currentJourney) return;
+    
+    const updatedNotes = [...currentJourney.notes, noteRecord];
+    const updatedJourney = { ...currentJourney, notes: updatedNotes };
+    setCurrentJourney(updatedJourney);
+    
+    const updatedJourneys = journeys.map(j => 
+      j.id === currentJourney.id ? updatedJourney : j
+    );
+    setJourneys(updatedJourneys);
+    storage.saveJourneys(updatedJourneys);
+  };
+
+  const handlePreviewPhoto = (photoUrl: string) => {
+    Taro.previewImage({
+      urls: currentJourney?.photos || [],
+      current: photoUrl
+    });
+  };
+
+  const handleCall = () => {
+    if (!currentJourney) return;
+    Taro.makePhoneCall({
+      phoneNumber: currentJourney.partnerInfo.phone || ''
+    });
   };
 
   const handleEvaluate = () => {
@@ -279,7 +340,7 @@ const JourneyPage: React.FC = () => {
               <Text className={styles.partnerName}>{currentJourney.partnerInfo.name}</Text>
               <Text className={styles.partnerMeta}>⭐ {currentJourney.partnerInfo.rating} · 已认证</Text>
             </View>
-            <View className={styles.callButton}>
+            <View className={styles.callButton} onClick={handleCall}>
               <Text className={styles.callIcon}>📞</Text>
             </View>
           </View>
@@ -305,18 +366,58 @@ const JourneyPage: React.FC = () => {
           )}
         </View>
 
+        {currentJourney.status === 'confirmed' && (
+          <View className={styles.confirmSection}>
+            <ActionButton
+              text="出发前确认"
+              type="primary"
+              size="large"
+              fullWidth
+              onClick={() => setShowConfirmModal(true)}
+            />
+          </View>
+        )}
+
+        {isLocationSharing && currentJourney.status === 'ongoing' && (
+          <View className={styles.locationCard}>
+            <View className={styles.locationHeader}>
+              <Text className={styles.locationTitle}>📍 位置共享中</Text>
+              <Text 
+                className={styles.locationClose}
+                onClick={() => handleAction('location')}
+              >
+                关闭
+              </Text>
+            </View>
+            <View className={styles.distanceInfo}>
+              <Text className={styles.distanceText}>
+                距离集合点约 {distance} 米
+              </Text>
+              <View className={styles.distanceBar}>
+                <View 
+                  className={styles.distanceProgress} 
+                  style={{ width: `${Math.max(10, Math.min(100, 100 - distance / 10))}%` }}
+                />
+              </View>
+            </View>
+          </View>
+        )}
+
         <View className={styles.actionSection}>
           <Text className={styles.sectionTitle}>行程操作</Text>
-          <ActionButtonGroup actions={journeyActions} onAction={handleAction} />
+          <ActionButtonGroup 
+            actions={journeyActions} 
+            onAction={handleAction} 
+          />
         </View>
 
         <View className={styles.noteSection}>
           <Text className={styles.noteTitle}>行程笔记</Text>
           {currentJourney.notes.length > 0 && (
             <View style={{ marginBottom: '16rpx' }}>
-              {currentJourney.notes.map((note, index) => (
-                <View key={index} style={{ marginBottom: '8rpx' }}>
-                  <Text style={{ fontSize: '28rpx', color: '#636E72' }}>• {note}</Text>
+              {currentJourney.notes.map((noteItem, index) => (
+                <View key={index} style={{ marginBottom: '8rpx', padding: '12rpx', backgroundColor: '#F8F9FA', borderRadius: '8rpx' }}>
+                  <Text style={{ fontSize: '26rpx', color: '#636E72' }}>{noteItem}</Text>
                 </View>
               ))}
             </View>
@@ -339,11 +440,18 @@ const JourneyPage: React.FC = () => {
 
         {currentJourney.photos.length > 0 && (
           <View className={styles.noteSection}>
-            <Text className={styles.noteTitle}>行程照片</Text>
+            <Text className={styles.noteTitle}>行程照片 ({currentJourney.photos.length})</Text>
             <View className={styles.photoGrid}>
               {currentJourney.photos.map((photo, index) => (
-                <View key={index} className={styles.photoItem}>
+                <View 
+                  key={index} 
+                  className={styles.photoItem}
+                  onClick={() => handlePreviewPhoto(photo)}
+                >
                   <Image src={photo} className={styles.photo} mode="aspectFill" />
+                  <View className={styles.photoOverlay}>
+                    <Text className={styles.photoIcon}>🔍</Text>
+                  </View>
                 </View>
               ))}
             </View>
@@ -362,6 +470,71 @@ const JourneyPage: React.FC = () => {
           </View>
         )}
       </View>
+
+      {showConfirmModal && (
+        <>
+          <View className={styles.overlay} onClick={() => setShowConfirmModal(false)} />
+          <View className={styles.confirmModal}>
+            <View className={styles.modalHeader}>
+              <Text className={styles.modalTitle}>出发前确认</Text>
+              <Text className={styles.modalClose} onClick={() => setShowConfirmModal(false)}>✕</Text>
+            </View>
+            
+            <View className={styles.modalContent}>
+              <View className={styles.confirmItem}>
+                <Text className={styles.confirmLabel}>👤 对方信息</Text>
+                <View className={styles.confirmValue}>
+                  <Image src={currentJourney.partnerInfo.avatar} className={styles.confirmAvatar} mode="aspectFill" />
+                  <View>
+                    <Text className={styles.confirmName}>{currentJourney.partnerInfo.name}</Text>
+                    <Text className={styles.confirmMeta}>⭐ {currentJourney.partnerInfo.rating} · 已认证</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View className={styles.confirmItem}>
+                <Text className={styles.confirmLabel}>📍 集合地点</Text>
+                <Text className={styles.confirmText}>{currentJourney.requestInfo.location.name}</Text>
+                <Text className={styles.confirmSubtext}>{currentJourney.requestInfo.location.address}</Text>
+              </View>
+
+              <View className={styles.confirmItem}>
+                <Text className={styles.confirmLabel}>🤫 约定暗号</Text>
+                <View className={styles.secretDisplay}>
+                  <Text className={styles.secretText}>{currentJourney.secretCode}</Text>
+                </View>
+              </View>
+
+              <View className={styles.confirmItem}>
+                <Text className={styles.confirmLabel}>📅 约定时间</Text>
+                <Text className={styles.confirmText}>
+                  {currentJourney.requestInfo.timeSlot.date} {currentJourney.requestInfo.timeSlot.startTime}
+                </Text>
+              </View>
+
+              <View className={styles.callConfirmButton} onClick={handleCall}>
+                <Text className={styles.callConfirmIcon}>📞</Text>
+                <Text className={styles.callConfirmText}>一键拨号确认</Text>
+              </View>
+            </View>
+
+            <View className={styles.modalFooter}>
+              <ActionButton
+                text="取消"
+                type="secondary"
+                size="large"
+                onClick={() => setShowConfirmModal(false)}
+              />
+              <ActionButton
+                text="确认出发"
+                type="primary"
+                size="large"
+                onClick={handleConfirmStart}
+              />
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 };
